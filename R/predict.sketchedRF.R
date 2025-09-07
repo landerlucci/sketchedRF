@@ -1,0 +1,67 @@
+#' Predict method for Sketched Random Forest object
+#'
+#' Prediction of test data using sketched Random Forest.
+#' @param object an object of class skecthedRF, as that created by the function sketchedRF.
+#' @param ... Additional arguments passed to the prediction routine.  These may include:
+#' \itemize{
+#' \item \code{newdata}: a data frame or matrix containing new data.
+#' \item \code{type}: one of "response", "prob", "top3", "all", indicating the type of output: predicted values, matrix of class probabilities, matrix of top 3 candidate classes or all of the above.
+#' \item \code{predict.all}: Should the predictions of all trees be kept? Default is TRUE.
+#' }
+#' @return The object returned depends on the argument \code{type}:
+#' \item{individual}{if \code{predict.all=TRUE}, then the individual component of the returned object is a matrix where each column contains the predicted class by a tree in the forest.}
+#' \item{response}{predicted classes (the classes with majority vote).}
+#' \item{prob}{matrix of class probabilities (one column for each class and one row for each input) averaged over the trees.}
+#' \item{top3}{matrix of top 3 candidate classes (one row for each input).}
+#' All of the previous options if \code{type="all"}. If \code{predict.all=TRUE}, then the \code{individual} component of the returned object is a matrix where each column contains prediction by a tree in the forest.
+#' @references L. Anderlucci, A. Montanari, M. Ferracin (2025). \emph{Perturbing data to address dataset shift in metastatic cancer classification}.
+#' @seealso \link{sketchedRF}, \link{varImp}, \link{varImpPlot.sketchedRF}
+#' @examples
+#' train<-c(1:45,51:95,101:145)
+#' test<-c(46:50,96:100,146:150)
+#' out.sRF<-sketchedRF(x=iris[train,-5],y=iris[train,5],nk=NULL,sketch="Gaussian",ntree=500)
+#' iris_pred<-predict(out.sRF,newdata=iris[test,-5],type="all",predict.all=TRUE)
+#' table(iris_pred$response,iris[test,5])
+#' @importFrom stats predict
+#' @export
+predict.sketchedRF<-function(object,...){
+  args <- list(...)
+  newdata <- args$newdata
+  type <- args$type
+  predict.all <- args$predict.all
+  ntree<-length(object$Individual) # no. of trees
+  K<-length(unique(object$y)) # no.of classes
+  yhat<-matrix(NA,nrow(newdata),ntree)
+  phat<-array(NA,c(nrow(newdata),K,ntree))
+
+  for (j in 1:ntree){
+      yhat[,j]<-predict(object$Individual[[j]],newdata = newdata)
+      phat[,,j]<-predict(object$Individual[[j]],newdata = newdata,type="prob")
+    }
+
+    if (predict.all) {
+      out<-list()
+      out$individual<-yhat
+      if (type=="response") out$response<-apply(yhat,1,getmode)
+      if (type=="prob") out$prob<-apply(phat,c(1,2),mean)
+      if (type=="top3") out$top3<-apply(yhat,1,getmode3)
+      if (type=="all") {
+        out$response<-apply(yhat,1,getmode)
+        out$prob<-apply(phat,c(1,2),mean)
+        out$top3<-apply(yhat,1,getmode3)
+      }
+    } else {
+      if (type=="response") out$response<-apply(yhat,1,getmode)
+      if (type=="prob") out$prob<-apply(phat,c(1,2),mean)
+      if (type=="top3") out$top3<-apply(yhat,1,getmode3)
+      if (type=="all") {
+        out<-list()
+        out$response<-apply(yhat,1,getmode)
+        out$prob<-apply(phat,c(1,2),mean)
+        out$top3<-apply(yhat,1,getmode3)
+      }
+    }
+
+    return(out)
+  }
+

@@ -1,0 +1,14 @@
+Package: sketchedRF
+Title: Fit Sketched Random Forests
+Version: 0.1.0
+Authors@R: c(
+    person("Laura", "Anderlucci",, "laura.anderlucci@unibo.it", role = c("aut", "cre")),
+    person("Angela", "Montanari",, "angela.montanari@unibo.it", role = "aut"))
+Maintainer: Laura Anderlucci <laura.anderlucci@unibo.it>
+Description: Classification based on a forest of trees trained on multiple sets of data perturbed via matrix sketching.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports: randomForest, extraDistr, pracma,stats,graphics
